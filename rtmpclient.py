@@ -118,12 +118,17 @@ class NetConnection(object):
             result, fault = yield self.client.send(Command(name='connect', cmdData=self.data, args=args), timeout=timeout)
             if _debug: print 'NetConnection.connect result=', result, 'fault=', fault
             raise StopIteration, (result is not None)
-        except: 
-            if _debug: print 'NetConnection.connect failed to do handshake', sys.exc_info()[1]
-            try: sock.close()
-            except: pass
-            raise StopIteration, False
-    
+        except:
+            # BUGFIX: Re-raise a StopIteration 'True' (raised on success by the previous block), instead of treating it as an error
+            e = sys.exc_info()[1]
+            if (StopIteration == type(e) and e):
+                raise e
+            else:
+                if _debug: print 'NetConnection.connect failed to do handshake', sys.exc_info()[1]
+                try: sock.close()
+                except: pass
+                raise StopIteration, False
+
     def close(self): # disconnect the connection with the server
         if self.client is not None: 
             yield self.client.connectionClosed()
