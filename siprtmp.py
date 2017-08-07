@@ -600,18 +600,18 @@ class Context(object):
                 self.media.close(); self.media = None
         except:
             if _debug: print '  exception in unregister', (sys and sys.exc_info() or None)
-    
-    def rtmp_invite(self, dest, *args):
+
+    def rtmp_invite(self, dest, headers_string=None, *args):
         global agent
         try:
-            if _debug: print 'rtmp-invite %r %r'%(dest, args)
+            if _debug: print 'rtmp-invite dest=%r, headers_string=%r, args=%r'%(dest, headers_string, args)
             if self.user: # already a registered user exists
                 if not self.session: # not already in a session, so create one
                     try: dest = Address(dest) # first try the default scheme supplied by application
                     except: dest = Address(self.user.address.uri.scheme + ':' + dest) # otherwise scheme is picked from registered URI
                     if _debug: print '  create media context'
                     media = MediaContext(self, None, agent.int_ip, self._preferred, RTPNetwork, *args) # create a media context for the call
-                    self.outgoing = self.user.connect(dest, sdp=media.session.mysdp, provisional=True)
+                    self.outgoing = self.user.connect(dest, sdp=media.session.mysdp, provisional=True, headers=SIPHeader.createHeadersFromString(headers_string) if headers_string is not None else None)
                     try:
                         session, reason = yield self.outgoing
                         if _debug: print '  session=', session, 'reason=', reason
